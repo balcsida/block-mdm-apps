@@ -60,15 +60,15 @@ for app_name in "${!APPS[@]}"; do
 PLIST
   echo "    Stub created (${bundle_id} v${STUB_VERSION})"
 
-  # Lock with system immutable flag (survives root writes by default)
-  chflags -R schg "$app_path"
-  echo "    Immutable flag set (chflags schg)"
-
-  # Add ACL deny rules
+  # Add ACL deny rules (must be set before immutable flag)
   chmod +a "everyone deny delete,write,writeattr,writeextattr,chown" "$app_path"
   chmod +a "everyone deny delete,write,writeattr,writeextattr,chown" "$contents_path"
   chmod +a "everyone deny delete,write,writeattr,writeextattr,chown" "$plist_path"
   echo "    ACL deny rules applied"
+
+  # Lock with system immutable flag (survives root writes by default)
+  chflags -R schg "$app_path"
+  echo "    Immutable flag set (chflags schg)"
 
   echo "    Done"
   echo ""
