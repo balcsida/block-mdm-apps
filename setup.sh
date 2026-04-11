@@ -76,5 +76,5 @@ done
 
 echo "All stubs created and locked."
 echo ""
-echo "To verify:  ls -laeO /Applications/Microsoft*.app"
+echo "To verify:  ls -laeO /Applications/<AppName>.app"
 echo "To undo:    sudo bash uninstall.sh"

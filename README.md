@@ -1,8 +1,8 @@
-# block-mdm-microsoft-apps
+# block-mdm-apps
 
-Prevent MDM (Jamf Pro, etc.) from reinstalling unwanted Microsoft apps on macOS.
+Prevent MDM (Jamf Pro, etc.) from force-reinstalling unwanted apps on macOS.
 
-Creates **stub `.app` bundles** with the correct bundle identifiers and a high version number, then locks them with **immutable flags** and **ACL deny rules**.
+Creates **stub `.app` bundles** with the correct bundle identifiers and a high version number, then locks them with **immutable flags** and **ACL deny rules**. Works with any app that your MDM pushes via policy — Microsoft Office, Slack, Zoom, Adobe Creative Cloud, or anything else.
 
 ## How it works
 
@@ -13,8 +13,8 @@ Creates **stub `.app` bundles** with the correct bundle identifiers and a high v
 ## Quick start
 
 ```bash
-git clone https://github.com/balcsida/block-mdm-microsoft-apps.git
-cd block-mdm-microsoft-apps
+git clone https://github.com/balcsida/block-mdm-apps.git
+cd block-mdm-apps
 
 # Review/edit the APPS array in setup.sh, then:
 sudo bash setup.sh
@@ -25,17 +25,30 @@ sudo bash setup.sh
 
 ## Customise
 
-Edit the `APPS` associative array at the top of `setup.sh`:
+Edit the `APPS` associative array at the top of `setup.sh`. Add any app using its name (as it appears in `/Applications`) and its `CFBundleIdentifier`:
 
 ```bash
 declare -A APPS=(
+  # Microsoft apps
   ["Microsoft Outlook"]="com.microsoft.Outlook"
   ["Microsoft Excel"]="com.microsoft.Excel"
   ["Microsoft OneNote"]="com.microsoft.onenote.mac"
   ["Microsoft OneDrive"]="com.microsoft.OneDrive"
   # ["Microsoft Word"]="com.microsoft.Word"
   # ["Microsoft PowerPoint"]="com.microsoft.Powerpoint"
+
+  # Other examples — uncomment or add your own:
+  # ["Slack"]="com.tinyspeck.slackmacgap"
+  # ["zoom.us"]="us.zoom.xos"
+  # ["Adobe Creative Cloud"]="com.adobe.acc.AdobeCreativeCloud"
+  # ["Google Chrome"]="com.google.Chrome"
 )
+```
+
+To find the bundle identifier for any installed app:
+
+```bash
+mdls -name kMDItemCFBundleIdentifier /Applications/SomeApp.app
 ```
 
 Then re-run `sudo bash setup.sh`.
