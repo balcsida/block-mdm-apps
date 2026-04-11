@@ -7,13 +7,20 @@ set -euo pipefail
 # Key: app name (matches /Applications/<name>.app)
 # Value: bundle identifier (must match the real app's CFBundleIdentifier)
 declare -A APPS=(
+  # Microsoft
   ["Microsoft Outlook"]="com.microsoft.Outlook"
   ["Microsoft Excel"]="com.microsoft.Excel"
+  ["Microsoft Word"]="com.microsoft.Word"
   ["Microsoft OneNote"]="com.microsoft.onenote.mac"
   ["Microsoft OneDrive"]="com.microsoft.OneDrive"
-  # Uncomment to block additional apps:
-  # ["Microsoft Word"]="com.microsoft.Word"
+  ["Microsoft 365 Copilot"]="com.microsoft.m365copilot"
+  ["OneDrive"]="com.microsoft.OneDrive-mac"
   # ["Microsoft PowerPoint"]="com.microsoft.Powerpoint"
+
+  # Apple iWork
+  ["Keynote"]="com.apple.iWork.Keynote"
+  ["Pages"]="com.apple.iWork.Pages"
+  ["Numbers"]="com.apple.iWork.Numbers"
 )
 
 STUB_VERSION="99.0.0"
