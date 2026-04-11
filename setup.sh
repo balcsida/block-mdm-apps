@@ -21,6 +21,11 @@ declare -A APPS=(
   ["Keynote"]="com.apple.iWork.Keynote"
   ["Pages"]="com.apple.iWork.Pages"
   ["Numbers"]="com.apple.iWork.Numbers"
+
+  # Other
+  ["zoom.us"]="us.zoom.xos"
+  ["Firefox"]="org.mozilla.firefox"
+  ["VLC"]="org.videolan.vlc"
 )
 
 STUB_VERSION="99.0.0"
