@@ -6,11 +6,21 @@ set -euo pipefail
 STUB_APPS=(
   "Microsoft Outlook"
   "Microsoft Excel"
+  "Microsoft Word"
   "Microsoft OneNote"
   "Microsoft OneDrive"
-  # Add any extras you added to setup.sh:
-  # "Microsoft Word"
-  # "Microsoft PowerPoint"
+  "Microsoft 365 Copilot"
+  "OneDrive"
+  "Keynote"
+  "Pages"
+  "Numbers"
+  "zoom.us"
+  "Firefox"
+  "VLC"
+)
+
+LOCALIZED_STUBS=(
+  "OneDrive"
 )
 
 for app_name in "${STUB_APPS[@]}"; do
@@ -24,6 +34,20 @@ for app_name in "${STUB_APPS[@]}"; do
     echo "    Removed"
   else
     echo "==> ${app_name}: not found, skipping"
+  fi
+done
+
+for folder_name in "${LOCALIZED_STUBS[@]}"; do
+  folder_path="/Applications/${folder_name}.localized"
+
+  if [ -d "$folder_path" ]; then
+    echo "==> Removing .localized stub: ${folder_name}"
+    chflags -R noschg "$folder_path" 2>/dev/null || true
+    chmod -RN "$folder_path" 2>/dev/null || true
+    rm -rf "$folder_path"
+    echo "    Removed"
+  else
+    echo "==> ${folder_name}.localized: not found, skipping"
   fi
 done
 
