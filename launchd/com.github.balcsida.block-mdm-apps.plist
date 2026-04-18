@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.github.balcsida.block-mdm-apps</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/usr/local/sbin/block-mdm-apps-setup.sh</string>
+  </array>
+
+  <!-- Re-apply stubs every 15 minutes. Adjust as desired. -->
+  <key>StartInterval</key>
+  <integer>900</integer>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/var/log/block-mdm-apps.log</string>
+  <key>StandardErrorPath</key>
+  <string>/var/log/block-mdm-apps.log</string>
+</dict>
+</plist>
