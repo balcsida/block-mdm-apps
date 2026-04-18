@@ -28,29 +28,24 @@ declare -A APPS=(
   ["VLC"]="org.videolan.vlc"
 )
 
+# Apps that install as /Applications/<name>.localized/<name>.app
+# (Microsoft OneDrive's installer uses this layout.)
+declare -A LOCALIZED_APPS=(
+  ["OneDrive"]="com.microsoft.OneDrive"
+)
+
 STUB_VERSION="99.0.0"
 
-# ─── Main ────────────────────────────────────────────────────────────────────
+# ─── Helpers ─────────────────────────────────────────────────────────────────
 
-for app_name in "${!APPS[@]}"; do
-  bundle_id="${APPS[$app_name]}"
-  app_path="/Applications/${app_name}.app"
-  contents_path="${app_path}/Contents"
-  plist_path="${contents_path}/Info.plist"
+strip_protections() {
+  local p="$1"
+  chflags -R noschg "$p" 2>/dev/null || true
+  chmod -RN "$p" 2>/dev/null || true
+}
 
-  echo "==> ${app_name}"
-
-  # If a real (non-stub) app exists, remove it first
-  if [ -d "$app_path" ]; then
-    echo "    Removing existing app..."
-    # Strip any existing protections so we can replace it
-    chflags -R noschg "$app_path" 2>/dev/null || true
-    chmod -RN "$app_path" 2>/dev/null || true
-    rm -rf "$app_path"
-  fi
-
-  # Create stub .app bundle
-  mkdir -p "$contents_path"
+write_stub_plist() {
+  local plist_path="$1" bundle_id="$2" app_name="$3"
   cat > "$plist_path" << PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
@@ -70,21 +65,95 @@ for app_name in "${!APPS[@]}"; do
 </dict>
 </plist>
 PLIST
+}
+
+deny_acl() {
+  chmod +a "everyone deny delete,write,writeattr,writeextattr,chown" "$1"
+}
+
+# ─── Main ────────────────────────────────────────────────────────────────────
+
+shopt -s nullglob
+
+# Standard .app stubs
+for app_name in "${!APPS[@]}"; do
+  bundle_id="${APPS[$app_name]}"
+  app_path="/Applications/${app_name}.app"
+  contents_path="${app_path}/Contents"
+  plist_path="${contents_path}/Info.plist"
+
+  echo "==> ${app_name}"
+
+  # Remove installer-numbered copies (e.g. "zoom.us 1.app", "zoom.us 2.app")
+  for leftover in /Applications/"${app_name}"\ [0-9]*.app; do
+    echo "    Removing leftover: $(basename "$leftover")"
+    strip_protections "$leftover"
+    rm -rf "$leftover"
+  done
+
+  if [ -d "$app_path" ]; then
+    echo "    Removing existing app..."
+    strip_protections "$app_path"
+    rm -rf "$app_path"
+  fi
+
+  mkdir -p "$contents_path"
+  write_stub_plist "$plist_path" "$bundle_id" "$app_name"
   echo "    Stub created (${bundle_id} v${STUB_VERSION})"
 
-  # Add ACL deny rules (must be set before immutable flag)
-  chmod +a "everyone deny delete,write,writeattr,writeextattr,chown" "$app_path"
-  chmod +a "everyone deny delete,write,writeattr,writeextattr,chown" "$contents_path"
-  chmod +a "everyone deny delete,write,writeattr,writeextattr,chown" "$plist_path"
+  deny_acl "$app_path"
+  deny_acl "$contents_path"
+  deny_acl "$plist_path"
   echo "    ACL deny rules applied"
 
-  # Lock with system immutable flag (survives root writes by default)
   chflags -R schg "$app_path"
   echo "    Immutable flag set (chflags schg)"
 
   echo "    Done"
   echo ""
 done
+
+# `.localized` folder stubs (e.g. /Applications/OneDrive.localized/OneDrive.app)
+for folder_name in "${!LOCALIZED_APPS[@]}"; do
+  bundle_id="${LOCALIZED_APPS[$folder_name]}"
+  folder_path="/Applications/${folder_name}.localized"
+  app_path="${folder_path}/${folder_name}.app"
+  contents_path="${app_path}/Contents"
+  plist_path="${contents_path}/Info.plist"
+
+  echo "==> ${folder_name}.localized"
+
+  # Remove installer-numbered copies (OneDrive-1.localized, OneDrive-2.localized, ...)
+  for leftover in /Applications/"${folder_name}"-[0-9]*.localized; do
+    echo "    Removing leftover: $(basename "$leftover")"
+    strip_protections "$leftover"
+    rm -rf "$leftover"
+  done
+
+  if [ -d "$folder_path" ]; then
+    echo "    Removing existing folder..."
+    strip_protections "$folder_path"
+    rm -rf "$folder_path"
+  fi
+
+  mkdir -p "$contents_path"
+  write_stub_plist "$plist_path" "$bundle_id" "$folder_name"
+  echo "    Stub created (${bundle_id} v${STUB_VERSION})"
+
+  deny_acl "$folder_path"
+  deny_acl "$app_path"
+  deny_acl "$contents_path"
+  deny_acl "$plist_path"
+  echo "    ACL deny rules applied"
+
+  chflags -R schg "$folder_path"
+  echo "    Immutable flag set (chflags schg)"
+
+  echo "    Done"
+  echo ""
+done
+
+shopt -u nullglob
 
 echo "All stubs created and locked."
 echo ""
