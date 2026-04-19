@@ -1,37 +1,39 @@
 #!/bin/bash
 # setup.sh — Create stub .app bundles and lock them down
 # Requires: sudo (for chflags and ACLs)
+# Compatible with bash 3.2 (macOS default /bin/bash).
 set -euo pipefail
 
 # ─── Apps to block ───────────────────────────────────────────────────────────
-# Key: app name (matches /Applications/<name>.app)
-# Value: bundle identifier (must match the real app's CFBundleIdentifier)
-declare -A APPS=(
+# Format: "<app name>|<bundle identifier>"
+#   <app name> matches /Applications/<name>.app
+#   <bundle id> must match the real app's CFBundleIdentifier
+APPS=(
   # Microsoft
-  ["Microsoft Outlook"]="com.microsoft.Outlook"
-  ["Microsoft Excel"]="com.microsoft.Excel"
-  ["Microsoft Word"]="com.microsoft.Word"
-  ["Microsoft OneNote"]="com.microsoft.onenote.mac"
-  ["Microsoft OneDrive"]="com.microsoft.OneDrive"
-  ["Microsoft 365 Copilot"]="com.microsoft.m365copilot"
-  ["OneDrive"]="com.microsoft.OneDrive-mac"
-  # ["Microsoft PowerPoint"]="com.microsoft.Powerpoint"
+  "Microsoft Outlook|com.microsoft.Outlook"
+  "Microsoft Excel|com.microsoft.Excel"
+  "Microsoft Word|com.microsoft.Word"
+  "Microsoft OneNote|com.microsoft.onenote.mac"
+  "Microsoft OneDrive|com.microsoft.OneDrive"
+  "Microsoft 365 Copilot|com.microsoft.m365copilot"
+  "OneDrive|com.microsoft.OneDrive-mac"
+  # "Microsoft PowerPoint|com.microsoft.Powerpoint"
 
   # Apple iWork
-  ["Keynote"]="com.apple.iWork.Keynote"
-  ["Pages"]="com.apple.iWork.Pages"
-  ["Numbers"]="com.apple.iWork.Numbers"
+  "Keynote|com.apple.iWork.Keynote"
+  "Pages|com.apple.iWork.Pages"
+  "Numbers|com.apple.iWork.Numbers"
 
   # Other
-  ["zoom.us"]="us.zoom.xos"
-  ["Firefox"]="org.mozilla.firefox"
-  ["VLC"]="org.videolan.vlc"
+  "zoom.us|us.zoom.xos"
+  "Firefox|org.mozilla.firefox"
+  "VLC|org.videolan.vlc"
 )
 
 # Apps that install as /Applications/<name>.localized/<name>.app
 # (Microsoft OneDrive's installer uses this layout.)
-declare -A LOCALIZED_APPS=(
-  ["OneDrive"]="com.microsoft.OneDrive"
+LOCALIZED_APPS=(
+  "OneDrive|com.microsoft.OneDrive"
 )
 
 STUB_VERSION="99.0.0"
@@ -76,8 +78,9 @@ deny_acl() {
 shopt -s nullglob
 
 # Standard .app stubs
-for app_name in "${!APPS[@]}"; do
-  bundle_id="${APPS[$app_name]}"
+for entry in "${APPS[@]}"; do
+  app_name="${entry%%|*}"
+  bundle_id="${entry#*|}"
   app_path="/Applications/${app_name}.app"
   contents_path="${app_path}/Contents"
   plist_path="${contents_path}/Info.plist"
@@ -114,8 +117,9 @@ for app_name in "${!APPS[@]}"; do
 done
 
 # `.localized` folder stubs (e.g. /Applications/OneDrive.localized/OneDrive.app)
-for folder_name in "${!LOCALIZED_APPS[@]}"; do
-  bundle_id="${LOCALIZED_APPS[$folder_name]}"
+for entry in "${LOCALIZED_APPS[@]}"; do
+  folder_name="${entry%%|*}"
+  bundle_id="${entry#*|}"
   folder_path="/Applications/${folder_name}.localized"
   app_path="${folder_path}/${folder_name}.app"
   contents_path="${app_path}/Contents"
