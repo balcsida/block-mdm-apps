@@ -25,25 +25,27 @@ sudo bash setup.sh
 
 ## Customise
 
-Edit the `APPS` associative array at the top of `setup.sh`. Add any app using its name (as it appears in `/Applications`) and its `CFBundleIdentifier`:
+Edit the `APPS` array at the top of `setup.sh`. Each entry is `"<app name>|<bundle identifier>"`, where `<app name>` matches `/Applications/<name>.app`:
 
 ```bash
-declare -A APPS=(
+APPS=(
   # Microsoft apps
-  ["Microsoft Outlook"]="com.microsoft.Outlook"
-  ["Microsoft Excel"]="com.microsoft.Excel"
-  ["Microsoft OneNote"]="com.microsoft.onenote.mac"
-  ["Microsoft OneDrive"]="com.microsoft.OneDrive"
-  # ["Microsoft Word"]="com.microsoft.Word"
-  # ["Microsoft PowerPoint"]="com.microsoft.Powerpoint"
+  "Microsoft Outlook|com.microsoft.Outlook"
+  "Microsoft Excel|com.microsoft.Excel"
+  "Microsoft OneNote|com.microsoft.onenote.mac"
+  "Microsoft OneDrive|com.microsoft.OneDrive"
+  # "Microsoft Word|com.microsoft.Word"
+  # "Microsoft PowerPoint|com.microsoft.Powerpoint"
 
   # Other examples — uncomment or add your own:
-  # ["Slack"]="com.tinyspeck.slackmacgap"
-  # ["zoom.us"]="us.zoom.xos"
-  # ["Adobe Creative Cloud"]="com.adobe.acc.AdobeCreativeCloud"
-  # ["Google Chrome"]="com.google.Chrome"
+  # "Slack|com.tinyspeck.slackmacgap"
+  # "zoom.us|us.zoom.xos"
+  # "Adobe Creative Cloud|com.adobe.acc.AdobeCreativeCloud"
+  # "Google Chrome|com.google.Chrome"
 )
 ```
+
+For apps whose installer drops into a `.localized` wrapper folder (OneDrive does this), add them to the `LOCALIZED_APPS` array instead — same format.
 
 To find the bundle identifier for any installed app:
 
@@ -52,6 +54,32 @@ mdls -name kMDItemCFBundleIdentifier /Applications/SomeApp.app
 ```
 
 Then re-run `sudo bash setup.sh`.
+
+## Keep stubs intact after bypass (optional)
+
+If your MDM policy uses a **static group** (so Smart Group evasion doesn't apply) or runs a pre-install script that strips `chflags schg`/ACLs, the `installer` binary can still land a real app on disk — either at the original path or at a numbered fallback (`zoom.us 1.app`, `OneDrive-1.localized`, …). The included LaunchDaemon re-runs `setup.sh` every 15 minutes so any such reinstall is swept before long.
+
+```bash
+# Install
+sudo install -m 0755 setup.sh /usr/local/sbin/block-mdm-apps-setup.sh
+sudo install -m 0644 -o root -g wheel \
+  launchd/com.github.balcsida.block-mdm-apps.plist \
+  /Library/LaunchDaemons/com.github.balcsida.block-mdm-apps.plist
+sudo launchctl bootstrap system \
+  /Library/LaunchDaemons/com.github.balcsida.block-mdm-apps.plist
+
+# Verify
+sudo launchctl print system/com.github.balcsida.block-mdm-apps | grep -E "state|last exit"
+sudo tail /var/log/block-mdm-apps.log
+
+# Uninstall
+sudo launchctl bootout system \
+  /Library/LaunchDaemons/com.github.balcsida.block-mdm-apps.plist
+sudo rm /Library/LaunchDaemons/com.github.balcsida.block-mdm-apps.plist
+sudo rm /usr/local/sbin/block-mdm-apps-setup.sh
+```
+
+Tune the interval by editing `StartInterval` in the plist (seconds). Logs go to `/var/log/block-mdm-apps.log`. This is cat-and-mouse — the daemon is visible via `launchctl list` and a targeted audit would find it.
 
 ## Uninstall
 
