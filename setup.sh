@@ -36,6 +36,24 @@ LOCALIZED_APPS=(
   "OneDrive|com.microsoft.OneDrive"
 )
 
+# Launch plists / helper binaries that MDM keeps re-dropping even after the
+# parent app is stubbed. Each path is replaced with an empty file and locked,
+# so the installer can neither write the real plist nor register the helper.
+# Use `daemon` for LaunchDaemons + /Library/PrivilegedHelperTools binaries
+# (system domain), `agent` for LaunchAgents (gui/<uid> domain).
+# Format: "<kind>|<absolute path>"
+PROTECTED_PATHS=(
+  # OneDrive — updater/sync agents and daemons (stubs in /Applications/OneDrive.app)
+  "agent|/Library/LaunchAgents/com.microsoft.OneDriveStandaloneUpdater.plist"
+  "agent|/Library/LaunchAgents/com.microsoft.SyncReporter.plist"
+  "daemon|/Library/LaunchDaemons/com.microsoft.OneDriveStandaloneUpdaterDaemon.plist"
+  "daemon|/Library/LaunchDaemons/com.microsoft.OneDriveUpdaterDaemon.plist"
+
+  # Zoom — privileged helper daemon
+  "daemon|/Library/LaunchDaemons/us.zoom.ZoomDaemon.plist"
+  "daemon|/Library/PrivilegedHelperTools/us.zoom.ZoomDaemon"
+)
+
 STUB_VERSION="99.0.0"
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -158,6 +176,32 @@ for entry in "${LOCALIZED_APPS[@]}"; do
 done
 
 shopt -u nullglob
+
+# Protected plists and privileged-helper binaries
+for entry in "${PROTECTED_PATHS[@]}"; do
+  kind="${entry%%|*}"
+  path="${entry#*|}"
+  name="$(basename "$path")"
+
+  echo "==> ${name}"
+
+  if [ "$kind" = "agent" ]; then
+    launchctl bootout "gui/${SUDO_UID:-$(id -u)}" "$path" 2>/dev/null || true
+  else
+    launchctl bootout system "$path" 2>/dev/null || true
+  fi
+
+  if [ -e "$path" ]; then
+    strip_protections "$path"
+    rm -f "$path"
+  fi
+
+  : > "$path"
+  deny_acl "$path"
+  chflags schg "$path"
+  echo "    Blocked (empty stub, schg + ACL)"
+  echo ""
+done
 
 echo "All stubs created and locked."
 echo ""

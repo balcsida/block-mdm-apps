@@ -23,6 +23,15 @@ LOCALIZED_STUBS=(
   "OneDrive"
 )
 
+PROTECTED_PATHS=(
+  "/Library/LaunchAgents/com.microsoft.OneDriveStandaloneUpdater.plist"
+  "/Library/LaunchAgents/com.microsoft.SyncReporter.plist"
+  "/Library/LaunchDaemons/com.microsoft.OneDriveStandaloneUpdaterDaemon.plist"
+  "/Library/LaunchDaemons/com.microsoft.OneDriveUpdaterDaemon.plist"
+  "/Library/LaunchDaemons/us.zoom.ZoomDaemon.plist"
+  "/Library/PrivilegedHelperTools/us.zoom.ZoomDaemon"
+)
+
 for app_name in "${STUB_APPS[@]}"; do
   app_path="/Applications/${app_name}.app"
 
@@ -48,6 +57,18 @@ for folder_name in "${LOCALIZED_STUBS[@]}"; do
     echo "    Removed"
   else
     echo "==> ${folder_name}.localized: not found, skipping"
+  fi
+done
+
+for path in "${PROTECTED_PATHS[@]}"; do
+  if [ -e "$path" ]; then
+    echo "==> Removing protected stub: ${path}"
+    chflags noschg "$path" 2>/dev/null || true
+    chmod -N "$path" 2>/dev/null || true
+    rm -f "$path"
+    echo "    Removed"
+  else
+    echo "==> ${path}: not found, skipping"
   fi
 done
 
