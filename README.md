@@ -47,6 +47,8 @@ APPS=(
 
 For apps whose installer drops into a `.localized` wrapper folder (OneDrive does this), add them to the `LOCALIZED_APPS` array instead — same format.
 
+If MDM also pushes LaunchAgents/LaunchDaemons or privileged helpers for a blocked app (they show up as "legacy daemon" / "legacy agent" rows in System Settings → Login Items & Extensions, often with an "unidentified developer" label once the parent app is stubbed), list their absolute paths in `PROTECTED_PATHS`. They will be replaced with an empty file locked with `schg` + ACL so the installer can't put the real plist back.
+
 To find the bundle identifier for any installed app:
 
 ```bash
